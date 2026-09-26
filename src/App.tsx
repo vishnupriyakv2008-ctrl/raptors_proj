@@ -9,6 +9,7 @@ import RoleIsolation from '@/components/RoleIsolation';
 import Judging from '@/components/Judging';
 import Prizes from '@/components/Prizes';
 import AcceptanceSuite from '@/components/AcceptanceSuite';
+import DockerCompose from '@/components/DockerCompose';
 import Submission from '@/components/Submission';
 import Judges from '@/components/Judges';
 import Timeline from '@/components/Timeline';
@@ -34,6 +35,7 @@ function App() {
         <Judging />
         <Prizes />
         <AcceptanceSuite />
+        <DockerCompose />
         <Submission />
         <Judges />
         <Timeline />
