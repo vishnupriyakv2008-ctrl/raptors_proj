@@ -25,11 +25,12 @@ export default function Footer() {
           <div>
             <h4 className="text-xs font-mono text-zinc-400 uppercase tracking-wider mb-4">Navigate</h4>
             <div className="flex flex-col gap-2.5">
-              <a href="#about" className="text-sm text-zinc-500 hover:text-cyan-400 transition-colors">About</a>
-              <a href="#why" className="text-sm text-zinc-500 hover:text-cyan-400 transition-colors">Why Participate</a>
+              <a href="#manifesto" className="text-sm text-zinc-500 hover:text-cyan-400 transition-colors">Manifesto</a>
               <a href="#tiers" className="text-sm text-zinc-500 hover:text-cyan-400 transition-colors">Tier Ladder</a>
-              <a href="#judging" className="text-sm text-zinc-500 hover:text-cyan-400 transition-colors">Judging Criteria</a>
+              <a href="#prizes" className="text-sm text-zinc-500 hover:text-cyan-400 transition-colors">Prizes</a>
+              <a href="#judges" className="text-sm text-zinc-500 hover:text-cyan-400 transition-colors">Judges</a>
               <a href="#timeline" className="text-sm text-zinc-500 hover:text-cyan-400 transition-colors">Timeline</a>
+              <a href="#faq" className="text-sm text-zinc-500 hover:text-cyan-400 transition-colors">FAQ</a>
               <a href="#register" className="text-sm text-zinc-500 hover:text-cyan-400 transition-colors">Register</a>
             </div>
           </div>

@@ -3,12 +3,11 @@ import { Menu, X, Terminal } from 'lucide-react';
 
 const navLinks = [
   { label: 'Manifesto', href: '#manifesto' },
-  { label: 'About', href: '#about' },
-  { label: 'Why Participate', href: '#why' },
   { label: 'Tiers', href: '#tiers' },
-  { label: 'Judging', href: '#judging' },
+  { label: 'Prizes', href: '#prizes' },
+  { label: 'Judges', href: '#judges' },
   { label: 'Timeline', href: '#timeline' },
-  { label: 'Rules', href: '#rules' },
+  { label: 'FAQ', href: '#faq' },
 ];
 
 export default function Navbar() {
