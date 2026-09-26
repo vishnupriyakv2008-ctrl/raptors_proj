@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Menu, X, Terminal } from 'lucide-react';
+import UserMenu from '@/components/UserMenu';
 
 const navLinks = [
   { label: 'Manifesto', href: '#manifesto' },
@@ -7,11 +8,12 @@ const navLinks = [
   { label: 'Prizes', href: '#prizes' },
   { label: 'Judges', href: '#judges' },
   { label: 'Docker', href: '#docker' },
+  { label: 'Platform', href: '#platform' },
   { label: 'Timeline', href: '#timeline' },
   { label: 'FAQ', href: '#faq' },
 ];
 
-export default function Navbar() {
+export default function Navbar({ onSignInClick }: { onSignInClick: () => void }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -43,7 +45,7 @@ export default function Navbar() {
             <a
               key={link.href}
               href={link.href}
-              className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors rounded-lg hover:bg-white/5"
+              className="px-3 py-2 text-sm text-zinc-400 hover:text-white transition-colors rounded-lg hover:bg-white/5"
             >
               {link.label}
             </a>
@@ -51,6 +53,7 @@ export default function Navbar() {
         </div>
 
         <div className="hidden md:flex items-center gap-3">
+          <UserMenu onSignInClick={onSignInClick} />
           <a
             href="#register"
             className="px-5 py-2 text-sm font-medium bg-white text-black rounded-lg hover:bg-cyan-400 transition-all duration-300 hover:shadow-[0_0_20px_rgba(34,211,238,0.4)]"
@@ -80,6 +83,12 @@ export default function Navbar() {
               {link.label}
             </a>
           ))}
+          <button
+            onClick={() => { setMobileOpen(false); onSignInClick(); }}
+            className="px-4 py-3 text-sm font-medium text-zinc-300 hover:text-white text-left"
+          >
+            Sign In
+          </button>
           <a
             href="#register"
             onClick={() => setMobileOpen(false)}
