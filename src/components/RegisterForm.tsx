@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { getDb, genId } from '@/lib/db';
 import { useReveal } from '@/hooks/useReveal';
 import { Send, Loader2, CheckCircle2, AlertCircle, Users } from 'lucide-react';
 import type { Registration } from '@/types';
@@ -24,21 +24,10 @@ export default function RegisterForm() {
   }, []);
 
   async function fetchRegistrations() {
-    const { data, error } = await supabase
-      .from('public_registrations')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(50);
-
-    if (!error && data) {
-      setRegistrations(data as Registration[]);
-      setRegCount(data.length);
-    }
-
-    const { count } = await supabase
-      .from('public_registrations')
-      .select('*', { count: 'exact', head: true });
-    if (count !== null) setRegCount(count);
+    const db = await getDb();
+    const { rows } = await db.query('SELECT team_name, country, team_size, solo, created_at FROM registrations ORDER BY created_at DESC LIMIT 50');
+    setRegistrations(rows as Registration[]);
+    setRegCount(rows.length);
   }
 
   function handleChange(field: keyof typeof form, value: string | number | boolean) {
@@ -74,18 +63,20 @@ export default function RegisterForm() {
       return;
     }
 
-    const { error } = await supabase.from('registrations').insert([payload]);
-
-    if (error) {
+    try {
+      const db = await getDb();
+      await db.query(
+        'INSERT INTO registrations (id, team_name, email, team_size, members, country, solo) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+        [genId('reg'), payload.team_name, payload.email, payload.team_size, payload.members, payload.country, payload.solo]
+      );
+      setStatus('success');
+      setForm({ team_name: '', email: '', team_size: 1, members: '', country: '', solo: false });
+      fetchRegistrations();
+      setTimeout(() => setStatus('idle'), 5000);
+    } catch (err: any) {
       setStatus('error');
-      setErrorMsg(error.message || 'Something went wrong. Please try again.');
-      return;
+      setErrorMsg(err.message || 'Something went wrong. Please try again.');
     }
-
-    setStatus('success');
-    setForm({ team_name: '', email: '', team_size: 1, members: '', country: '', solo: false });
-    fetchRegistrations();
-    setTimeout(() => setStatus('idle'), 5000);
   }
 
   return (

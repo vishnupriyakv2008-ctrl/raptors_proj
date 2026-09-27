@@ -1,0 +1,39 @@
+# Dogfood Portal — Tier Declaration
+# This file declares which tiers the project claims to have reached.
+# The acceptance report (acceptance-report.txt) is the receipt.
+
+[project]
+name = "Dogfood Portal"
+version = "1.0.0"
+license = "MIT"
+
+[tiers]
+# T1: Core — auth, roles, events, teams, submissions, deadlines, gallery
+T1_core = true
+
+# T2: Judging — judge assignment, rubrics, score normalization, role isolation
+T2_judging = false
+
+# T3: Public — community voting, comments, hidden results, audit trails
+T3_public = false
+
+# T4: Stretch — REST API, webhooks, certificates, embeddable widgets
+T4_stretch = false
+
+[infrastructure]
+# Runs offline with docker compose up — no cloud account, no hosted service
+docker_compose = true
+offline_capable = true
+hosted_service_dependency = false
+external_api_dependency = false
+
+# Database: PGlite (WASM Postgres) runs entirely in the browser via IndexedDB.
+# No external database server required.
+database = "pglite"
+database_hosted = false
+
+[notes]
+# T1 is fully implemented: authentication, roles (visitor/participant/judge/organizer),
+# event creation, team formation via invite links, project submission with draft/publish,
+# deadline enforcement, and a searchable public gallery.
+# T2-T4 are not claimed — honest reporting per rule 06.

@@ -1,6 +1,3 @@
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// This file is intentionally empty.
+// The app now uses PGlite (src/lib/db.ts) for local offline storage.
+// No Supabase or cloud dependency remains.

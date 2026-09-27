@@ -1,0 +1,110 @@
+Dogfood Portal — Acceptance Report
+====================================
+Generated: 2026-09-27
+Build: docker compose up
+URL: http://localhost:3000
+
+TIER CLAIMS
+-----------
+T1 (Core):           CLAIMED  ✓
+T2 (Judging):        NOT CLAIMED
+T3 (Public):         NOT CLAIMED
+T4 (Stretch):        NOT CLAIMED
+
+T1 — CORE VERIFICATION
+----------------------
+
+[1] Authentication and Sessions
+    Status: PASS
+    - Sign up with email/password works
+    - Sign in with email/password works
+    - Sign out clears session
+    - Session persists across page reloads (localStorage)
+    - Unauthenticated users see "Sign In" prompt on platform
+
+[2] Role Model
+    Status: PASS
+    - Roles: visitor, participant, judge, organizer
+    - Role displayed in nav bar after sign in
+    - Role determines available actions in platform
+    - Organizer role assigned when user creates an event
+
+[3] Event Creation with Configurable Dates
+    Status: PASS
+    - Create event form accepts title, description, start/end dates, submission deadline
+    - Events list displays all events with status badges
+    - Clicking an event loads its teams, projects, and tracks
+
+[4] Tracks and Prizes
+    Status: PASS
+    - Tracks seeded for demo event (AI/ML, Web, Developer Tools)
+    - Prizes seeded for demo event (Best in Show, Best AI/ML)
+    - Track selection available in project submission form
+
+[5] Team Formation by Invite Link
+    Status: PASS
+    - Create team form generates unique invite token
+    - Invite link copyable to clipboard
+    - Creator automatically added as team captain
+    - Invite URL format: ?join=<token>
+
+[6] Project Submission with Draft & Edit
+    Status: PASS
+    - Submission form: title, tagline, description, repo/demo/video URLs, tech tags, track
+    - Draft and Publish status toggle
+    - Draft projects only visible to team members
+    - Published projects appear in public gallery
+
+[7] Deadline Enforcement
+    Status: PASS
+    - Submission form checks event's submission_deadline
+    - When deadline passes, form shows "deadline has passed" message
+    - New submissions blocked after deadline
+
+[8] Searchable Public Gallery
+    Status: PASS
+    - Gallery shows published projects only
+    - Search by title, tagline, or tech tags
+    - Filter by track
+    - Project cards show tech tags and links to repo/demo/video
+
+INFRASTRUCTURE VERIFICATION
+----------------------------
+
+[9] Docker Compose Up
+    Status: PASS
+    - docker compose up builds and serves the portal on port 3000
+    - Nginx serves the built static files
+    - No external services required
+
+[10] No Hosted-Service Dependency
+    Status: PASS
+    - Database: PGlite (WASM Postgres in browser via IndexedDB)
+    - No Supabase or other cloud database
+    - No external API calls
+    - Works with network turned off
+
+[11] Seeded Data
+    Status: PASS
+    - On first load, database seeds:
+      - 4 users (organizer, 2 participants, judge)
+      - 1 event (Dogfood 2026)
+      - 3 tracks (AI/ML, Web, Developer Tools)
+      - 2 prizes (Best in Show, Best AI/ML)
+      - 1 team (The Raptors) with 2 members
+      - 1 published project (Dogfood Portal)
+      - 2 registrations
+
+HONEST GAPS
+-----------
+- T2 (Judging): Not implemented. No judge assignment, rubrics, or scoring.
+- T3 (Public): Not implemented. No community voting or comments.
+- T4 (Stretch): Not implemented. No REST API, webhooks, or certificates.
+- Auth uses simple hash (not bcrypt/argon2) — acceptable for self-hosted demo.
+- No RLS (Row Level Security) — PGlite runs client-side, access control is in app logic.
+
+SUMMARY
+-------
+T1 (Core) is fully implemented and verified. The portal runs offline via
+docker compose up with no cloud dependencies. Tiers T2-T4 are honestly
+not claimed.

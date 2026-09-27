@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/lib/supabase';
+import { getDb, genId, genToken } from '@/lib/db';
 import { Calendar, Plus, Users, FolderGit2, Search, Filter, Clock, ExternalLink, Copy, Check, Github, Video, Tag, AlertCircle } from 'lucide-react';
 
 interface Event {
@@ -58,36 +58,30 @@ export default function Platform({ onSignInClick }: { onSignInClick: () => void 
   const [galleryFilter, setGalleryFilter] = useState<string>('all');
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchEvents();
-  }, []);
+  useEffect(() => { fetchEvents(); }, []);
 
   async function fetchEvents() {
-    const { data } = await supabase.from('events').select('*').order('created_at', { ascending: false });
-    if (data) setEvents(data as Event[]);
+    const db = await getDb();
+    const { rows } = await db.query('SELECT * FROM events ORDER BY created_at DESC');
+    setEvents(rows as Event[]);
   }
 
   async function fetchTeams(eventId: string) {
-    const { data } = await supabase
-      .from('teams')
-      .select('*, team_members!inner(user_id)')
-      .eq('event_id', eventId)
-      .order('created_at', { ascending: false });
-    if (data) setTeams(data as unknown as Team[]);
+    const db = await getDb();
+    const { rows } = await db.query('SELECT * FROM teams WHERE event_id = $1 ORDER BY created_at DESC', [eventId]);
+    setTeams(rows as Team[]);
   }
 
   async function fetchProjects(eventId: string) {
-    const { data } = await supabase
-      .from('projects')
-      .select('*')
-      .eq('event_id', eventId)
-      .order('created_at', { ascending: false });
-    if (data) setProjects(data as Project[]);
+    const db = await getDb();
+    const { rows } = await db.query('SELECT * FROM projects WHERE event_id = $1 ORDER BY created_at DESC', [eventId]);
+    setProjects(rows as Project[]);
   }
 
   async function fetchTracks(eventId: string) {
-    const { data } = await supabase.from('tracks').select('*').eq('event_id', eventId);
-    if (data) setTracks(data as Track[]);
+    const db = await getDb();
+    const { rows } = await db.query('SELECT * FROM tracks WHERE event_id = $1', [eventId]);
+    setTracks(rows as Track[]);
   }
 
   function selectEvent(eventId: string) {
@@ -170,10 +164,10 @@ export default function Platform({ onSignInClick }: { onSignInClick: () => void 
         {view === 'overview' && (
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { label: 'Events', value: events.length, icon: Calendar, color: 'cyan' },
-              { label: 'Teams', value: teams.length, icon: Users, color: 'orange' },
-              { label: 'Projects', value: projects.length, icon: FolderGit2, color: 'lime' },
-              { label: 'Published', value: projects.filter(p => p.status === 'published').length, icon: Check, color: 'cyan' },
+              { label: 'Events', value: events.length, icon: Calendar },
+              { label: 'Teams', value: teams.length, icon: Users },
+              { label: 'Projects', value: projects.length, icon: FolderGit2 },
+              { label: 'Published', value: projects.filter(p => p.status === 'published').length, icon: Check },
             ].map((stat) => {
               const Icon = stat.icon;
               return (
@@ -208,7 +202,7 @@ export default function Platform({ onSignInClick }: { onSignInClick: () => void 
               </button>
             </div>
 
-            {showCreateEvent && <CreateEventForm onCreated={() => { fetchEvents(); setShowCreateEvent(false); }} />}
+            {showCreateEvent && <CreateEventForm userId={user.id} onCreated={() => { fetchEvents(); setShowCreateEvent(false); }} />}
 
             {events.length === 0 ? (
               <div className="glass rounded-xl p-10 text-center text-zinc-500">
@@ -267,7 +261,7 @@ export default function Platform({ onSignInClick }: { onSignInClick: () => void 
             )}
 
             {showCreateTeam && selectedEventId && (
-              <CreateTeamForm eventId={selectedEventId} onCreated={() => { fetchTeams(selectedEventId); setShowCreateTeam(false); }} />
+              <CreateTeamForm eventId={selectedEventId} userId={user.id} onCreated={() => { fetchTeams(selectedEventId); setShowCreateTeam(false); }} />
             )}
 
             {teams.length === 0 && selectedEventId ? (
@@ -340,6 +334,7 @@ export default function Platform({ onSignInClick }: { onSignInClick: () => void 
             {showSubmit && selectedEventId && (
               <SubmitProjectForm
                 eventId={selectedEventId}
+                userId={user.id}
                 teams={teams}
                 tracks={tracks}
                 deadlinePassed={!!(events.find(e => e.id === selectedEventId) && new Date(events.find(e => e.id === selectedEventId)!.submission_deadline) < new Date())}
@@ -470,7 +465,7 @@ export default function Platform({ onSignInClick }: { onSignInClick: () => void 
 }
 
 // --- Create Event Form ---
-function CreateEventForm({ onCreated }: { onCreated: () => void }) {
+function CreateEventForm({ userId, onCreated }: { userId: string; onCreated: () => void }) {
   const [form, setForm] = useState({
     title: '', description: '', start_date: '', end_date: '', submission_deadline: '',
   });
@@ -481,16 +476,18 @@ function CreateEventForm({ onCreated }: { onCreated: () => void }) {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const { error } = await supabase.from('events').insert([{
-      ...form,
-      status: 'upcoming',
-      start_date: new Date(form.start_date).toISOString(),
-      end_date: new Date(form.end_date).toISOString(),
-      submission_deadline: new Date(form.submission_deadline).toISOString(),
-    }]);
-    if (error) { setError(error.message); setLoading(false); return; }
-    setLoading(false);
-    onCreated();
+    try {
+      const db = await getDb();
+      await db.query(
+        'INSERT INTO events (id, title, description, start_date, end_date, submission_deadline, status, created_by) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+        [genId('evt'), form.title, form.description || null, new Date(form.start_date).toISOString(), new Date(form.end_date).toISOString(), new Date(form.submission_deadline).toISOString(), 'upcoming', userId]
+      );
+      setLoading(false);
+      onCreated();
+    } catch (err: any) {
+      setError(err.message);
+      setLoading(false);
+    }
   }
 
   return (
@@ -527,7 +524,7 @@ function CreateEventForm({ onCreated }: { onCreated: () => void }) {
 }
 
 // --- Create Team Form ---
-function CreateTeamForm({ eventId, onCreated }: { eventId: string; onCreated: () => void }) {
+function CreateTeamForm({ eventId, userId, onCreated }: { eventId: string; userId: string; onCreated: () => void }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
@@ -537,14 +534,23 @@ function CreateTeamForm({ eventId, onCreated }: { eventId: string; onCreated: ()
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const { data: team, error: teamError } = await supabase.from('teams').insert([{
-      name, description, event_id: eventId,
-    }]).select().single();
-    if (teamError) { setError(teamError.message); setLoading(false); return; }
-    // Add creator as captain
-    await supabase.from('team_members').insert([{ team_id: team.id, role: 'captain' }]);
-    setLoading(false);
-    onCreated();
+    try {
+      const db = await getDb();
+      const teamId = genId('tm');
+      await db.query(
+        'INSERT INTO teams (id, event_id, name, description, invite_token, created_by) VALUES ($1, $2, $3, $4, $5, $6)',
+        [teamId, eventId, name, description || null, genToken(), userId]
+      );
+      await db.query(
+        'INSERT INTO team_members (id, team_id, user_id, role) VALUES ($1, $2, $3, $4)',
+        [genId('tmem'), teamId, userId, 'captain']
+      );
+      setLoading(false);
+      onCreated();
+    } catch (err: any) {
+      setError(err.message);
+      setLoading(false);
+    }
   }
 
   return (
@@ -562,8 +568,8 @@ function CreateTeamForm({ eventId, onCreated }: { eventId: string; onCreated: ()
 }
 
 // --- Submit Project Form ---
-function SubmitProjectForm({ eventId, teams, tracks, deadlinePassed, onSubmitted }: {
-  eventId: string; teams: Team[]; tracks: Track[]; deadlinePassed: boolean; onSubmitted: () => void;
+function SubmitProjectForm({ eventId, userId, teams, tracks, deadlinePassed, onSubmitted }: {
+  eventId: string; userId: string; teams: Team[]; tracks: Track[]; deadlinePassed: boolean; onSubmitted: () => void;
 }) {
   const [form, setForm] = useState({
     title: '', tagline: '', description: '', repo_url: '', demo_url: '', video_url: '', tech_tags: '', team_id: '', track_id: '', status: 'draft',
@@ -575,22 +581,19 @@ function SubmitProjectForm({ eventId, teams, tracks, deadlinePassed, onSubmitted
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const { error } = await supabase.from('projects').insert([{
-      title: form.title,
-      tagline: form.tagline || null,
-      description: form.description || null,
-      repo_url: form.repo_url || null,
-      demo_url: form.demo_url || null,
-      video_url: form.video_url || null,
-      tech_tags: form.tech_tags ? form.tech_tags.split(',').map(t => t.trim()).filter(Boolean) : [],
-      team_id: form.team_id,
-      track_id: form.track_id || null,
-      event_id: eventId,
-      status: form.status,
-    }]);
-    if (error) { setError(error.message); setLoading(false); return; }
-    setLoading(false);
-    onSubmitted();
+    try {
+      const db = await getDb();
+      const tags = form.tech_tags ? form.tech_tags.split(',').map(t => t.trim()).filter(Boolean) : [];
+      await db.query(
+        `INSERT INTO projects (id, event_id, team_id, track_id, title, tagline, description, repo_url, demo_url, video_url, tech_tags, status, created_by) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+        [genId('prj'), eventId, form.team_id, form.track_id || null, form.title, form.tagline || null, form.description || null, form.repo_url || null, form.demo_url || null, form.video_url || null, tags, form.status, userId]
+      );
+      setLoading(false);
+      onSubmitted();
+    } catch (err: any) {
+      setError(err.message);
+      setLoading(false);
+    }
   }
 
   if (deadlinePassed) {
